@@ -3,9 +3,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import streamlit as st
 from babel.numbers import format_currency
-
+import os
 sns.set(style='dark')
 
+# Show the current working directory
 # Helper function yang dibutuhkan untuk menyiapkan berbagai dataframe
 def persebaran_customer(df):
     persebaran_customer = customers_df.groupby("customer_city")["customer_id"].nunique().sort_values( ascending=False)
@@ -48,13 +49,13 @@ def Waktu_Pengiriman(df):
     
     return df["range_time"] 
 # Load cleaned data
-customers_df = pd.read_csv("./customers_dataset.csv")
-order_items_df = pd.read_csv("./order_items_dataset.csv")
-order_product_english_df = pd.read_csv("./order_product_english_df.csv")
-order_payments_df = pd.read_csv("./order_payments_dataset.csv")
-order_reviews_df = pd.read_csv("./order_reviews_dataset.csv")
-orders_dataset_df = pd.read_csv("./orders_dataset.csv")
-rfm_df = pd.read_csv("./rfm_df.csv")
+customers_df = pd.read_csv("dashboard/customers_dataset.csv")
+order_items_df = pd.read_csv("dashboard/order_items_dataset.csv")
+order_product_english_df = pd.read_csv("dashboard/order_product_english_df.csv")
+order_payments_df = pd.read_csv("dashboard/order_payments_dataset.csv")
+order_reviews_df = pd.read_csv("dashboard/order_reviews_dataset.csv")
+orders_dataset_df = pd.read_csv("dashboard/orders_dataset.csv")
+rfm_df = pd.read_csv("dashboard/rfm_df.csv")
 
 
 
