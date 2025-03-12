@@ -48,13 +48,13 @@ def Waktu_Pengiriman(df):
     
     return df["range_time"] 
 # Load cleaned data
-customers_df = pd.read_csv("customers_dataset.csv")
-order_items_df = pd.read_csv("order_items_dataset.csv")
-order_product_english_df = pd.read_csv("order_product_english_df.csv")
-order_payments_df = pd.read_csv("order_payments_dataset.csv")
-order_reviews_df = pd.read_csv("order_reviews_dataset.csv")
-orders_dataset_df = pd.read_csv("orders_dataset.csv")
-rfm_df = pd.read_csv("rfm_df.csv")
+customers_df = pd.read_csv("./customers_dataset.csv")
+order_items_df = pd.read_csv("./order_items_dataset.csv")
+order_product_english_df = pd.read_csv("./order_product_english_df.csv")
+order_payments_df = pd.read_csv("./order_payments_dataset.csv")
+order_reviews_df = pd.read_csv("./order_reviews_dataset.csv")
+orders_dataset_df = pd.read_csv("./orders_dataset.csv")
+rfm_df = pd.read_csv("./rfm_df.csv")
 
 
 
