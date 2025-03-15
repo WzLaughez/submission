@@ -6,12 +6,40 @@ from babel.numbers import format_currency
 import os
 sns.set(style='dark')
 
+
+# Load Data
+@st.cache_data
+def load_data():
+    def get_file_path(filename):
+        return f"dashboard/{filename}" if os.path.exists(f"dashboard/{filename}") else filename
+    
+    customers_df = pd.read_csv(get_file_path("customers_dataset.csv"))
+    order_items_df = pd.read_csv(get_file_path("order_items_dataset.csv"))
+    order_product_english_df = pd.read_csv(get_file_path("order_product_english_df.csv"))
+    order_payments_df = pd.read_csv(get_file_path("order_payments_dataset.csv"))
+    order_reviews_df = pd.read_csv(get_file_path("order_reviews_dataset.csv"))
+    orders_dataset_df = pd.read_csv(get_file_path("orders_dataset.csv"))
+    rfm_df = pd.read_csv(get_file_path("rfm_df.csv"))
+    
+    return (customers_df, order_items_df, order_product_english_df, 
+            order_payments_df, order_reviews_df, orders_dataset_df, rfm_df)
+
+(customers_df, order_items_df, order_product_english_df, 
+ order_payments_df, order_reviews_df, orders_dataset_df, rfm_df) = load_data()
+
 # Show the current working directory
 # Helper function yang dibutuhkan untuk menyiapkan berbagai dataframe
-def persebaran_customer(df):
-    persebaran_customer = customers_df.groupby("customer_city")["customer_id"].nunique().sort_values( ascending=False)
+def top_cities(df, n=10):
+    return df.groupby("customer_city")["customer_id"].nunique().sort_values(ascending=False).head(n)
 
-    return persebaran_customer
+def compute_sales_trend(df):
+    if "order_purchase_timestamp" in df.columns:
+        df["order_purchase_timestamp"] = pd.to_datetime(df["order_purchase_timestamp"], errors='coerce')
+        df = df.dropna(subset=["order_purchase_timestamp"])
+        return df.set_index("order_purchase_timestamp").resample("ME").size()
+    else:
+        st.error("Missing 'order_purchase_timestamp' column")
+        return pd.Series()
 
 def create_penjual_terbanyak(df):
     penjual_terbanyak = df.groupby("seller_id")["order_id"].nunique().sort_values(ascending=False)
@@ -48,19 +76,10 @@ def Waktu_Pengiriman(df):
     df["range_time"] = (df["order_delivered_customer_date"] - df["order_purchase_timestamp"]).dt.days   
     
     return df["range_time"] 
-# Load cleaned data
-customers_df = pd.read_csv("dashboard/customers_dataset.csv")
-order_items_df = pd.read_csv("dashboard/order_items_dataset.csv")
-order_product_english_df = pd.read_csv("dashboard/order_product_english_df.csv")
-order_payments_df = pd.read_csv("dashboard/order_payments_dataset.csv")
-order_reviews_df = pd.read_csv("dashboard/order_reviews_dataset.csv")
-orders_dataset_df = pd.read_csv("dashboard/orders_dataset.csv")
-rfm_df = pd.read_csv("dashboard/rfm_df.csv")
-
 
 
 # # Menyiapkan berbagai dataframe
-persebaran_customer = persebaran_customer(customers_df)
+persebaran_customer = top_cities(customers_df)
 penjualan_terbanyak = create_penjual_terbanyak(order_items_df)
 top_categories = create_top_categories(order_product_english_df)
 top_revenue = create_top_revenue(order_product_english_df)
@@ -76,46 +95,52 @@ st.header('Fariz Submission Dashboard :sparkles:')
 st.subheader('Daily Orders')
 
 #Kota persebaran customer dan Penjualan seller terbanyak
-st.subheader('Kota Persebaran Customer dan Penjual')
 
-fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(35, 15))
 
-# Plot persebaran pelanggan
-sns.barplot(x=persebaran_customer.head(10).index, 
-            y=persebaran_customer.head(10).values, 
-            ax=ax[0], 
-            palette="Blues_r")
+st.sidebar.header("Filter Data")
+num_cities = st.sidebar.slider("Jumlah Kota Teratas", min_value=5, max_value=20, value=10)
+num_categories = st.sidebar.slider("Jumlah Kategori Teratas", min_value=5, max_value=20, value=10)
 
-ax[0].set_title("10 Kota dengan Jumlah Pelanggan Terbanyak", fontsize=30)
-ax[0].set_xlabel("Kota", fontsize=30)
-ax[0].set_ylabel("Jumlah Pelanggan", fontsize=30)
-ax[0].tick_params(axis='x', rotation=75, labelsize=35)
-ax[0].tick_params(axis='y', labelsize=35)
-ax[0].grid(axis="y")
 
-# Plot penjualan terbanyak
-sns.barplot(x=penjualan_terbanyak.head(10).index, 
-            y=penjualan_terbanyak.head(10).values, 
-            ax=ax[1], 
-            palette="Blues_r")
-
-ax[1].set_title("10 ID Seller dengan Jumlah Order Terbanyak", fontsize=30)
-ax[1].set_xlabel("ID Seller", fontsize=30)
-ax[1].set_ylabel("Jumlah Order", fontsize=30)
-ax[1].tick_params(axis='x', rotation=90, labelsize=35)
-ax[1].tick_params(axis='y', labelsize=20)
-ax[1].grid(axis="y")
-
+st.subheader("Top Kota dengan Jumlah Pelanggan Terbanyak")
+city_data = top_cities(customers_df, n=num_cities)
+fig, ax = plt.subplots(figsize=(10, 5))
+sns.barplot(x=city_data.index, y=city_data.values, palette="Blues_r", ax=ax)
+ax.set_xlabel("Kota")
+ax.set_ylabel("Jumlah Pelanggan")
+ax.tick_params(axis='x', rotation=45)
 st.pyplot(fig)
 
-    
 
-# Daily Orders Trend
-st.subheader('Tren Jumlah Pesanan')
+st.subheader("Tren Jumlah Pesanan per Bulan")
+sales_trend_data = compute_sales_trend(orders_dataset_df)
+if not sales_trend_data.empty:
+    fig, ax = plt.subplots(figsize=(10, 5))
+    sales_trend_data.plot(marker="o", linestyle="-", color="b", ax=ax)
+    ax.set_xlabel("Tanggal")
+    ax.set_ylabel("Jumlah Pesanan")
+    st.pyplot(fig)
+else:
+    st.warning("No data available for sales trend.")
+
+st.subheader("Kategori Produk Terlaris")
+top_categories = order_product_english_df.groupby("product_category_name_english")["order_id"].count().sort_values(ascending=False).head(num_categories)
 fig, ax = plt.subplots(figsize=(12, 6))
-orders_trend.plot(marker="o", linestyle="-", color="b", ax=ax)
-ax.set_xlabel("Tanggal")
-ax.set_ylabel("Jumlah Pesanan")
+top_categories.plot(kind="barh", color="green", ax=ax)
+ax.set_title("Kategori Produk Terlaris")
+ax.set_xlabel("Jumlah Produk Terjual")
+ax.set_ylabel("Kategori Produk")
+ax.grid(axis="x")
+st.pyplot(fig)
+
+st.subheader("Kategori Produk Revenue Tertinggi")
+top_revenue = order_product_english_df.groupby("product_category_name_english").agg({"price":"sum"}).sort_values(by="price", ascending=False).head(num_categories)
+fig, ax = plt.subplots(figsize=(12, 6))
+top_revenue.plot(kind="barh", color="green", ax=ax)
+ax.set_title("Kategori Produk Revenue Tertinggi")
+ax.set_xlabel("Jumlah Revenue Produk Terjual")
+ax.set_ylabel("Kategori Produk")
+ax.grid(axis="x")
 st.pyplot(fig)
 
 # Payment Methods Distribution
